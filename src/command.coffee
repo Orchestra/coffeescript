@@ -45,6 +45,7 @@ SWITCHES = [
   ['-p', '--print',           'print out the compiled JavaScript']
   ['-r', '--require [FILE*]', 'require a library before executing your script']
   ['-s', '--stdio',           'listen for and compile scripts over stdio']
+  ['-S', '--nostrict',        'disable strict mode declarations']
   ['-t', '--tokens',          'print out the tokens that the lexer/rewriter produce']
   ['-v', '--version',         'display the version number']
   ['-w', '--watch',           'watch scripts for changes and rerun commands']
@@ -318,7 +319,7 @@ parseOptions = ->
 
 # The compile-time options to pass to the CoffeeScript compiler.
 compileOptions = (filename) ->
-  {filename, bare: opts.bare, header: opts.compile}
+  {filename, bare: opts.bare, strict: not opts.nostrict, header: opts.compile}
 
 # Start up a new Node.js instance with the arguments in `--nodejs` passed to
 # the `node` binary, preserving the other options.

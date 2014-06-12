@@ -261,6 +261,8 @@ exports.Block = class Block extends Base
       @expressions = rest
     code = @compileWithDeclarations o
     return code if o.bare
+    if o.strict
+      code = "#{o.indent}\"use strict\";\n#{code}"
     "#{prelude}(function() {\n#{code}\n}).call(this);\n"
 
   # Compile the expressions body for the contents of a function, with
