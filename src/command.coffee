@@ -35,6 +35,7 @@ SWITCHES = [
   ['-b', '--bare',            'compile without a top-level function wrapper']
   ['-c', '--compile',         'compile to JavaScript and save as .js files']
   ['-e', '--eval',            'pass a string from the command line as input']
+  ['-g', '--guard',  'insert runtime callback guards']
   ['-h', '--help',            'display this help message']
   ['-i', '--interactive',     'run an interactive CoffeeScript REPL']
   ['-j', '--join [FILE]',     'concatenate the source CoffeeScript before compiling']
@@ -319,7 +320,7 @@ parseOptions = ->
 
 # The compile-time options to pass to the CoffeeScript compiler.
 compileOptions = (filename) ->
-  {filename, bare: opts.bare, strict: not opts.nostrict, header: opts.compile}
+  {filename, bare: opts.bare, strict: not opts.nostrict, guard: opts.guard, header: opts.compile}
 
 # Start up a new Node.js instance with the arguments in `--nodejs` passed to
 # the `node` binary, preserving the other options.

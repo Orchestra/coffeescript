@@ -261,6 +261,8 @@ exports.Block = class Block extends Base
       @expressions = rest
     code = @compileWithDeclarations o
     return code if o.bare
+    if o.profile
+      code = "#{o.indent}require(\"coffee-profile\");\n#{code}"
     if o.strict
       code = "#{o.indent}\"use strict\";\n#{code}"
     "#{prelude}(function() {\n#{code}\n}).call(this);\n"
@@ -1156,6 +1158,8 @@ exports.Assign = class Assign extends Base
     code = "[].splice.apply(#{name}, [#{fromDecl}, #{to}].concat(#{valDef})), #{valRef}"
     if o.level > LEVEL_TOP then "(#{code})" else code
 
+GUARD_CODE = 'if (!(typeof cbname === \'function\' || typeof cbname === \'undefined\')) {\n  throw new Error("Coffeescript Guard: Supplied value for argument cbname is not a function: " + (require(\'util\').inspect(cbname)));\n}\n\nif (typeof cbname === \'function\') {\n  cbname = (function() {\n    var __cbcalled, __cbref;\n    __cbref = cbname;\n    __cbcalled = false;\n    return function() {\n      if (__cbcalled) {\n        throw new Error("Coffeescript Guard: Called callback (cbname) twice");\n      }\n      __cbcalled = true;\n      return __cbref.apply(this, arguments);\n    };\n  })();\n}'
+
 #### Code
 
 # A function definition. This is the only node that creates a new Scope.
@@ -1187,7 +1191,10 @@ exports.Code = class Code extends Base
     delete o.isExistentialEquals
     params = []
     exprs  = []
+    cbname = null
+    cbnames = ['cb', 'callback', 'done', 'next', 'reply', 'replyFn', 'ready', 'readyFn']
     for name in @paramNames() # this step must be performed before the others
+      cbname = name if name in cbnames
       unless o.scope.check name then o.scope.parameter name
     for param in @params when param.splat
       for {name: p} in @params
@@ -1226,6 +1233,10 @@ exports.Code = class Code extends Base
     code  = 'function'
     code  += ' ' + @name if @ctor
     code  += '(' + params.join(', ') + ') {'
+    if o.guard and cbname?
+      guard_code = GUARD_CODE.replace(/[ ]{2}/g, TAB).replace(/cbname/g, cbname)
+      for profline in guard_code.split '\n'
+        code  += "\n#{o.indent}#{profline}"
     code  += "\n#{ @body.compileWithDeclarations o }\n#{@tab}" unless @body.isEmpty()
     code  += '}'
     return @tab + code if @ctor
