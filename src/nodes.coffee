@@ -1158,7 +1158,7 @@ exports.Assign = class Assign extends Base
     code = "[].splice.apply(#{name}, [#{fromDecl}, #{to}].concat(#{valDef})), #{valRef}"
     if o.level > LEVEL_TOP then "(#{code})" else code
 
-GUARD_CODE = 'if (!(typeof cbname === \'function\' || typeof cbname === \'undefined\')) {\n  throw new Error("Coffeescript Guard: Supplied value for argument cbname is not a function: " + (require(\'util\').inspect(cbname)));\n}\n\nif (typeof cbname === \'function\') {\n  cbname = (function() {\n    var __cbcalled, __cbref;\n    __cbref = cbname;\n    __cbcalled = false;\n    return function() {\n      if (__cbcalled) {\n        throw new Error("Coffeescript Guard: Called callback (cbname) twice");\n      }\n      __cbcalled = true;\n      return __cbref.apply(this, arguments);\n    };\n  })();\n}'
+GUARD_CODE = "if (!(typeof cbname === 'function' || typeof cbname === 'undefined')) { throw new Error(\"Coffeescript Guard: Supplied value for argument cbname is not a function: \" + (require('util').inspect(cbname))); }\nif (typeof cbname === 'function') { cbname = (function(cbname, c) { return function() { if (c) { throw new Error(\"Coffeescript Guard: Called callback (cbname) twice\"); } c = true; return cbname.apply(this, arguments); }; })(cbname, false); }"
 
 #### Code
 
