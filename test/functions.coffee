@@ -178,6 +178,21 @@ test "default values with splatted arguments", ->
   eq  1, withSplats(1,1,1)
   eq  2, withSplats(1,1,1,1)
 
+test "#156: parameter lists with expansion", ->
+  expandArguments = (first, ..., lastButOne, last) ->
+    eq 1, first
+    eq 4, lastButOne
+    last
+  eq 5, expandArguments 1, 2, 3, 4, 5
+
+  throws (-> CoffeeScript.compile "(..., a, b...) ->"), null, "prohibit expansion and a splat"
+  throws (-> CoffeeScript.compile "(...) ->"),          null, "prohibit lone expansion"
+
+test "#156: parameter lists with expansion in array destructuring", ->
+  expandArray = (..., [..., last]) ->
+    last
+  eq 3, expandArray 1, 2, 3, [1, 2, 3]
+
 test "default values with function calls", ->
   doesNotThrow -> CoffeeScript.compile "(x = f()) ->"
 
@@ -199,10 +214,29 @@ test "#2258: allow whitespace-style parameter lists in function definitions", ->
     a, b, c
   ) -> c
   eq func(1, 2, 3), 3
-  
+
   func = (
     a
     b
     c
   ) -> b
   eq func(1, 2, 3), 2
+
+test "#2621: fancy destructuring in parameter lists", ->
+  func = ({ prop1: { key1 }, prop2: { key2, key3: [a, b, c] } }) ->
+    eq(key2, 'key2')
+    eq(a, 'a')
+
+  func({prop1: {key1: 'key1'}, prop2: {key2: 'key2', key3: ['a', 'b', 'c']}})
+
+test "#1435 Indented property access", ->
+  rec = -> rec: rec
+
+  eq 1, do ->
+    rec()
+      .rec ->
+        rec()
+          .rec ->
+            rec.rec()
+          .rec()
+    1

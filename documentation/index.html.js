@@ -1,29 +1,3 @@
-<%
-  require 'uv'
-  require 'json'
-  @counter = 0
-  def code_for(file, executable=false, show_load=true)
-    @counter += 1
-    return '' unless File.exists?("documentation/js/#{file}.js")
-    cs = File.read("documentation/coffee/#{file}.coffee")
-    js = File.read("documentation/js/#{file}.js")
-    js = js.sub(/^\/\/ generated.*?\n/i, '')
-    cshtml = Uv.parse(cs, 'xhtml', 'coffeescript', false, 'idle', false)
-    jshtml = Uv.parse(js, 'xhtml', 'javascript', false, 'idle', false)
-    append = executable  == true ? '' : "alert(#{executable});"
-    if executable and executable != true
-      cs.sub!(/(\S)\s*\Z/m, "\\1\n\nalert #{executable}")
-    end
-    run    = executable  == true ? 'run' : "run: #{executable}"
-    name   = "example#{@counter}"
-    script = "<script>window.#{name} = #{cs.to_json}</script>"
-    import = show_load ? "<div class='minibutton load' onclick='javascript: loadConsole(#{name});'>load</div>" : ''
-    button = executable ? "<div class='minibutton ok' onclick='javascript: #{js};#{append}'>#{run}</div>" : ''
-    "<div class='code'>#{cshtml}#{jshtml}#{script}#{import}#{button}<br class='clear' /></div>"
-  end
-%>
-
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -31,7 +5,7 @@
   <title>CoffeeScript</title>
   <link rel="canonical" href="http://coffeescript.org" />
   <link rel="stylesheet" type="text/css" href="documentation/css/docs.css" />
-  <link rel="stylesheet" type="text/css" href="documentation/css/idle.css" />
+  <link rel="stylesheet" type="text/css" href="documentation/css/tomorrow.css" />
   <link rel="shortcut icon" href="documentation/images/favicon.ico" />
 </head>
 <body>
@@ -39,7 +13,7 @@
   <div id="fadeout"></div>
 
   <div id="flybar">
-    <a id="logo" href="#top"> </a>
+    <a id="logo" href="#top"><img src="documentation/images/logo.png" width="225" height="39" alt="CoffeeScript" /></a>
     <div class="navigation toc">
       <div class="button">
         Table of Contents
@@ -48,9 +22,10 @@
         <a href="#overview">Overview</a>
         <a href="#installation">Installation</a>
         <a href="#usage">Usage</a>
+        <a href="#literate">Literate CoffeeScript</a>
         <a href="#language">Language Reference</a>
         <a href="#literals">Literals: Functions, Objects and Arrays</a>
-        <a href="#lexical_scope">Lexical Scoping and Variable Safety</a>
+        <a href="#lexical-scope">Lexical Scoping and Variable Safety</a>
         <a href="#conditionals">If, Else, Unless, and Conditional Assignment</a>
         <a href="#splats">Splats...</a>
         <a href="#loops">Loops and Comprehensions</a>
@@ -59,13 +34,14 @@
         <a href="#operators">Operators and Aliases</a>
         <a href="#classes">Classes, Inheritance, and Super</a>
         <a href="#destructuring">Destructuring Assignment</a>
-        <a href="#fat_arrow">Function Binding</a>
+        <a href="#fat-arrow">Function Binding</a>
         <a href="#embedded">Embedded JavaScript</a>
         <a href="#switch">Switch and Try/Catch</a>
         <a href="#comparisons">Chained Comparisons</a>
         <a href="#strings">String Interpolation, Block Strings, and Block Comments</a>
         <a href="#regexes">Block Regular Expressions</a>
         <a href="#cake">Cake, and Cakefiles</a>
+        <a href="#source-maps">Source Maps</a>
         <a href="#scripts">"text/coffeescript" Script Tags</a>
         <a href="#resources">Books, Screencasts, Examples and Resources</a>
         <a href="#changelog">Change Log</a>
@@ -108,6 +84,7 @@
         <a href="documentation/docs/command.html">"coffee" Command-Line Utility &mdash; src/command</a>
         <a href="documentation/docs/optparse.html">Option Parsing &mdash; src/optparse</a>
         <a href="documentation/docs/repl.html">Interactive REPL &mdash; src/repl</a>
+        <a href="documentation/docs/sourcemap.html">Source Maps &mdash; src/sourcemap</a>
       </div>
     </div>
     <div id="error" style="display:none;"></div>
@@ -117,9 +94,9 @@
     <span class="bookmark" id="top"></span>
 
     <p>
-      <b>CoffeeScript is a little language that compiles into JavaScript.</b> Underneath
-      all those awkward braces and semicolons, JavaScript has always had
-      a gorgeous object model at its heart. CoffeeScript is an attempt to expose
+      <b>CoffeeScript is a little language that compiles into JavaScript.</b>
+      Underneath that awkward Java-esque patina, JavaScript has always had
+      a gorgeous heart. CoffeeScript is an attempt to expose
       the good parts of JavaScript in a simple way.
     </p>
 
@@ -127,17 +104,18 @@
       The golden rule of CoffeeScript is: <i>"It's just JavaScript"</i>. The code
       compiles one-to-one into the equivalent JS, and there is
       no interpretation at runtime. You can use any existing JavaScript library
-      seamlessly from CoffeeScript (and vice-versa). The compiled output is 
-      readable and pretty-printed, passes through 
-      <a href="http://www.javascriptlint.com/">JavaScript Lint</a>
-      without warnings, will work in every JavaScript runtime, and tends
+      seamlessly from CoffeeScript (and vice-versa). The compiled output is
+      readable and pretty-printed, will work in every JavaScript runtime, and tends
       to run as fast or faster than the equivalent handwritten JavaScript.
     </p>
 
     <p>
       <b>Latest Version:</b>
-      <a href="http://github.com/jashkenas/coffee-script/tarball/1.4.0">1.4.0</a>
+      <a href="http://github.com/jashkenas/coffee-script/tarball/1.7.0">1.7.0</a>
     </p>
+
+    <pre>
+sudo npm install -g coffee-script</pre>
 
     <h2>
       <span id="overview" class="bookmark"></span>
@@ -146,7 +124,7 @@
 
     <p><i>CoffeeScript on the left, compiled JavaScript output on the right.</i></p>
 
-    <%= code_for('overview', 'cubes', false) %>
+    <%= codeFor('overview', 'cubes', false) %>
 
     <h2>
       <span id="installation" class="bookmark"></span>
@@ -176,7 +154,7 @@ npm install -g coffee-script</pre>
     <p>
       (Leave off the <tt>-g</tt> if you don't wish to install globally.)
     </p>
-    
+
     <p>
       If you'd prefer to install the latest <b>master</b> version of CoffeeScript, you
       can clone the CoffeeScript
@@ -190,7 +168,7 @@ npm install -g coffee-script</pre>
 npm install -g http://github.com/jashkenas/coffee-script/tarball/master</pre>
 
     <p>
-      Or, if you want to install to <tt>/usr/local</tt>, and don't want to use 
+      Or, if you want to install to <tt>/usr/local</tt>, and don't want to use
       npm to manage it, open the <tt>coffee-script</tt> directory and run:
     </p>
 
@@ -215,6 +193,13 @@ sudo bin/cake install</pre>
         <td>
           Compile a <tt>.coffee</tt> script into a <tt>.js</tt> JavaScript file
           of the same name.
+        </td>
+      </tr>
+      <tr>
+        <td><code>-m, --map</code></td>
+        <td>
+          Generate source maps alongside the compiled JavaScript files. Adds
+          <tt>sourceMappingURL</tt> directives to the JavaScript as well.
         </td>
       </tr>
       <tr>
@@ -254,21 +239,19 @@ sudo bin/cake install</pre>
         </td>
       </tr>
       <tr>
-        <td><code>-l, --lint</code></td>
-        <td>
-          If the <tt>jsl</tt>
-          (<a href="http://www.javascriptlint.com/">JavaScript Lint</a>)
-          command is installed, use it
-          to check the compilation of a CoffeeScript file. (Handy in
-          conjunction with <br /> <tt>--watch</tt>)
-        </td>
-      </tr>
-      <tr>
         <td><code>-s, --stdio</code></td>
         <td>
           Pipe in CoffeeScript to STDIN and get back JavaScript over STDOUT.
           Good for use with processes written in other languages. An example:<br />
           <tt>cat src/cake.coffee | coffee -sc</tt>
+        </td>
+      </tr>
+      <tr>
+        <td><code>-l, --literate</code></td>
+        <td>
+          Parses the code as Literate CoffeeScript. You only need to specify
+          this when passing in code directly over <b>stdio</b>, or using some sort
+          of extension-less file name.
         </td>
       </tr>
       <tr>
@@ -279,17 +262,10 @@ sudo bin/cake install</pre>
         </td>
       </tr>
       <tr>
-        <td><code>-r, --require</code></td>
-        <td>
-          Load a library before compiling or executing your script. Can be used
-          to hook in to the compiler (to add Growl notifications, for example).
-        </td>
-      </tr>
-      <tr>
         <td><code>-b, --bare</code></td>
         <td>
-          Compile the JavaScript without the 
-          <a href="#lexical_scope">top-level function safety wrapper</a>.
+          Compile the JavaScript without the
+          <a href="#lexical-scope">top-level function safety wrapper</a>.
         </td>
       </tr>
       <tr>
@@ -318,8 +294,9 @@ Expressions
         <td><code>--nodejs</code></td>
         <td>
           The <tt>node</tt> executable has some useful options you can set,
-          such as<br /> <tt>--debug</tt>, <tt>--debug-brk</tt> and <tt>--max-stack-size</tt>. Use this
-          flag to forward options directly to Node.js.
+          such as<br /> <tt>--debug</tt>, <tt>--debug-brk</tt>, <tt>--max-stack-size</tt>,
+          and <tt>--expose-gc</tt>. Use this flag to forward options directly to Node.js.
+          To pass multiple flags, use <tt>--nodejs</tt> multiple times.
         </td>
       </tr>
     </table>
@@ -355,6 +332,36 @@ Expressions
         <tt>coffee</tt>
       </li>
     </ul>
+
+    <h2>
+      <span id="literate" class="bookmark"></span>
+      Literate CoffeeScript
+    </h2>
+
+    <p>
+      Besides being used as an ordinary programming language, CoffeeScript may
+      also be written in "literate" mode. If you name your file with a
+      <tt>.litcoffee</tt> extension, you can write it as a Markdown document &mdash;
+      a document that also happens to be executable CoffeeScript code. The compiler
+      will treat any indented blocks (Markdown's way of indicating source code)
+      as code, and ignore the rest as comments.
+    </p>
+
+    <p>
+      Just for kicks, a little bit of the compiler is currently implemented in this fashion:
+      See it
+      <a href="https://gist.github.com/jashkenas/3fc3c1a8b1009c00d9df">as a document</a>,
+      <a href="https://raw.github.com/jashkenas/coffee-script/master/src/scope.litcoffee">raw</a>,
+      and <a href="http://cl.ly/LxEu">properly highlighted in a text editor</a>.
+    </p>
+
+    <p>
+      I'm fairly excited about this direction for the language, and am looking
+      forward to writing (and more importantly, reading) more programs in this style.
+      More information about Literate CoffeeScript, including an
+      <a href="https://github.com/jashkenas/journo">example program</a>,
+      are <a href="http://ashkenas.com/literate-coffeescript">available in this blog post</a>.
+    </p>
 
     <h2>
       <span id="language" class="bookmark"></span>
@@ -402,12 +409,12 @@ Expressions
       an arrow, and the function body. The empty function looks like this:
       <tt>-></tt>
     </p>
-    <%= code_for('functions', 'cube(5)') %>
+    <%= codeFor('functions', 'cube(5)') %>
     <p>
-      Functions may also have default values for arguments. Override the default
-      value by passing a non-null argument.
+      Functions may also have default values for arguments, which will be used
+      if the incoming argument is missing (<tt>null</tt> or <tt>undefined</tt>).
     </p>
-    <%= code_for('default_args', 'fill("cup")') %>
+    <%= codeFor('default_args', 'fill("cup")') %>
 
     <p>
       <span id="objects_and_arrays" class="bookmark"></span>
@@ -417,23 +424,23 @@ Expressions
       the commas are optional. Objects may be created using indentation instead
       of explicit braces, similar to <a href="http://yaml.org">YAML</a>.
     </p>
-    <%= code_for('objects_and_arrays', 'song.join(" ... ")') %>
+    <%= codeFor('objects_and_arrays', 'song.join(" ... ")') %>
     <p>
       In JavaScript, you can't use reserved words, like <tt>class</tt>, as properties
       of an object, without quoting them as strings. CoffeeScript notices reserved words
       used as keys in objects and quotes them for you, so you don't have to worry
       about it (say, when using jQuery).
     </p>
-    <%= code_for('objects_reserved') %>
+    <%= codeFor('objects_reserved') %>
 
     <p>
-      <span id="lexical_scope" class="bookmark"></span>
+      <span id="lexical-scope" class="bookmark"></span>
       <b class="header">Lexical Scoping and Variable Safety</b>
       The CoffeeScript compiler takes care to make sure that all of your variables
       are properly declared within lexical scope &mdash; you never need to write
       <tt>var</tt> yourself.
     </p>
-    <%= code_for('scope', 'inner') %>
+    <%= codeFor('scope', 'inner') %>
     <p>
       Notice how all of the variable declarations have been pushed up to
       the top of the closest scope, the first time they appear.
@@ -478,7 +485,7 @@ Expressions
       is no explicit ternary statement in CoffeeScript &mdash; you simply use
       a regular <b>if</b> statement on a single line.
     </p>
-    <%= code_for('conditionals') %>
+    <%= codeFor('conditionals') %>
 
     <p>
       <span id="splats" class="bookmark"></span>
@@ -488,7 +495,7 @@ Expressions
       splats <tt>...</tt>, both for function definition as well as invocation,
       making variable numbers of arguments a little bit more palatable.
     </p>
-    <%= code_for('splats', true) %>
+    <%= codeFor('splats', true) %>
 
     <p>
       <span id="loops" class="bookmark"></span>
@@ -499,7 +506,7 @@ Expressions
       Unlike for loops, array comprehensions are expressions, and can be returned
       and assigned.
     </p>
-    <%= code_for('array_comprehensions') %>
+    <%= codeFor('array_comprehensions') %>
     <p>
       Comprehensions should be able to handle most places where you otherwise
       would use a loop, <b>each</b>/<b>forEach</b>, <b>map</b>, or <b>select</b>/<b>filter</b>, for example:
@@ -508,7 +515,7 @@ Expressions
       in fixed-size increments, you can use a range to specify the start and
       end of your comprehension.
     </p>
-    <%= code_for('range_comprehensions', 'countdown') %>
+    <%= codeFor('range_comprehensions', 'countdown') %>
     <p>
       Note how because we are assigning the value of the comprehensions to a
       variable in the example above, CoffeeScript is collecting the result of
@@ -528,7 +535,7 @@ Expressions
       an object. Use <tt>of</tt> to signal comprehension over the properties of
       an object instead of the values in an array.
     </p>
-    <%= code_for('object_comprehensions', 'ages.join(", ")') %>
+    <%= codeFor('object_comprehensions', 'ages.join(", ")') %>
     <p>
       If you would like to iterate over just the keys that are defined on the
       object itself, by adding a <tt>hasOwnProperty</tt>
@@ -541,7 +548,7 @@ Expressions
       as an expression, returning an array containing the result of each iteration
       through the loop.
     </p>
-    <%= code_for('while', 'lyrics.join("\n")') %>
+    <%= codeFor('while', 'lyrics.join("\n")') %>
     <p>
       For readability, the <b>until</b> keyword is equivalent to <tt>while not</tt>,
       and the <b>loop</b> keyword is equivalent to <tt>while true</tt>.
@@ -553,7 +560,7 @@ Expressions
       provides the <tt>do</tt> keyword, which immediately invokes a passed function,
       forwarding any arguments.
     </p>
-    <%= code_for('do') %>
+    <%= codeFor('do') %>
 
     <p>
       <span id="slices" class="bookmark"></span>
@@ -564,12 +571,12 @@ Expressions
       Slices indices have useful defaults. An omitted first index defaults to
       zero and an omitted second index defaults to the size of the array.
     </p>
-    <%= code_for('slices', 'middle') %>
+    <%= codeFor('slices', 'middle') %>
     <p>
       The same syntax can be used with assignment to replace a segment of an array
       with new values, splicing it.
     </p>
-    <%= code_for('splices', 'numbers') %>
+    <%= codeFor('splices', 'numbers') %>
     <p>
       Note that JavaScript strings are immutable, and can't be spliced.
     </p>
@@ -583,7 +590,7 @@ Expressions
       pushed down into each possible branch of execution in the function
       below.
     </p>
-    <%= code_for('expressions', 'eldest') %>
+    <%= codeFor('expressions', 'eldest') %>
     <p>
       Even though functions will always return their final value, it's both possible
       and encouraged to return early from a function body writing out the explicit
@@ -593,19 +600,19 @@ Expressions
       Because variable declarations occur at the top of scope, assignment can
       be used within expressions, even for variables that haven't been seen before:
     </p>
-    <%= code_for('expressions_assignment', 'six') %>
+    <%= codeFor('expressions_assignment', 'six') %>
     <p>
       Things that would otherwise be statements in JavaScript, when used
       as part of an expression in CoffeeScript, are converted into expressions
       by wrapping them in a closure. This lets you do useful things, like assign
       the result of a comprehension to a variable:
     </p>
-    <%= code_for('expressions_comprehension', 'globals') %>
+    <%= codeFor('expressions_comprehension', 'globals') %>
     <p>
       As well as silly things, like passing a <b>try/catch</b> statement directly
       into a function call:
     </p>
-    <%= code_for('expressions_try', true) %>
+    <%= codeFor('expressions_try', true) %>
     <p>
       There are a handful of statements in JavaScript that can't be meaningfully
       converted into expressions, namely <tt>break</tt>, <tt>continue</tt>,
@@ -649,7 +656,9 @@ Expressions
       You can use <tt>in</tt> to test for array presence, and <tt>of</tt> to
       test for JavaScript object-key presence.
     </p>
-
+    <p>
+      To simplify math expressions, <tt>**</tt> can be used for exponentiation, <tt>//</tt> performs integer division and <tt>%%</tt> provides true mathematical modulo.
+    </p>
     <p>
       All together now:
     </p>
@@ -661,14 +670,17 @@ Expressions
       <tr><td><tt>not</tt></td><td><tt>!</tt></td></tr>
       <tr><td><tt>and</tt></td><td><tt>&amp;&amp;</tt></td></tr>
       <tr><td><tt>or</tt></td><td><tt>||</tt></td></tr>
-      <tr><td><tt>true, yes, on</tt></td><td><tt>true</tt></td></tr>
-      <tr><td><tt>false, no, off</tt></td><td><tt>false</tt></td></tr>
-      <tr><td><tt>@, this</tt></td><td><tt>this</tt></td></tr>
+      <tr><td><tt>true</tt>, <tt>yes</tt>, <tt>on</tt></td><td><tt>true</tt></td></tr>
+      <tr><td><tt>false</tt>, <tt>no</tt>, <tt>off</tt></td><td><tt>false</tt></td></tr>
+      <tr><td><tt>@</tt>, <tt>this</tt></td><td><tt>this</tt></td></tr>
       <tr><td><tt>of</tt></td><td><tt>in</tt></td></tr>
       <tr><td><tt>in</tt></td><td><i><small>no JS equivalent</small></i></td></tr>
+      <tr><td><tt>a ** b</tt></td><td><tt>Math.pow(a, b)</tt></td></tr>
+      <tr><td><tt>a // b</tt></td><td><tt>Math.floor(a / b)</tt></td></tr>
+      <tr><td><tt>a %% b</tt></td><td><tt>(a % b + b) % b</tt></td></tr>
     </table>
 
-    <%= code_for('aliases') %>
+    <%= codeFor('aliases') %>
 
     <p>
       <b class="header">The Existential Operator</b>
@@ -682,7 +694,7 @@ Expressions
       It can also be used for safer conditional assignment than <tt>||=</tt>
       provides, for cases where you may be handling numbers or strings.
     </p>
-    <%= code_for('existence', 'footprints') %>
+    <%= codeFor('existence', 'footprints') %>
     <p>
       The accessor variant of the existential operator <tt>?.</tt> can be used to soak
       up null references in a chain of properties. Use it instead
@@ -691,7 +703,7 @@ Expressions
       result, if the chain is broken, <b>undefined</b> is returned instead of
       the <b>TypeError</b> that would be raised otherwise.
     </p>
-    <%= code_for('soaks') %>
+    <%= codeFor('soaks') %>
     <p>
       Soaking up nulls is similar to Ruby's
       <a href="http://andand.rubyforge.org/">andand gem</a>, and to the
@@ -724,7 +736,7 @@ Expressions
       Constructor functions are named, to better support helpful stack traces.
       In the first class in the example below, <tt>this.constructor.name is "Animal"</tt>.
     </p>
-    <%= code_for('classes', true) %>
+    <%= codeFor('classes', true) %>
     <p>
       If structuring your prototypes classically isn't your cup of tea, CoffeeScript
       provides a couple of lower-level conveniences. The <tt>extends</tt> operator
@@ -733,7 +745,7 @@ Expressions
       quick access to an object's prototype; and <tt>super()</tt>
       is converted into a call against the immediate ancestor's method of the same name.
     </p>
-    <%= code_for('prototypes', '"one_two".dasherize()') %>
+    <%= codeFor('prototypes', '"one_two".dasherize()') %>
     <p>
       Finally, class definitions are blocks of executable code, which make for interesting
       metaprogramming possibilities. Because in the context of a class definition,
@@ -753,24 +765,33 @@ Expressions
       on the right to the variables on the left. In the simplest case, it can be
       used for parallel assignment:
     </p>
-    <%= code_for('parallel_assignment', 'theBait') %>
+    <%= codeFor('parallel_assignment', 'theBait') %>
     <p>
       But it's also helpful for dealing with functions that return multiple
       values.
     </p>
-    <%= code_for('multiple_return_values', 'forecast') %>
+    <%= codeFor('multiple_return_values', 'forecast') %>
     <p>
       Destructuring assignment can be used with any depth of array and object nesting,
       to help pull out deeply nested properties.
     </p>
-    <%= code_for('object_extraction', 'name + " — " + street') %>
+    <%= codeFor('object_extraction', '"name + "-" + street"') %>
     <p>
       Destructuring assignment can even be combined with splats.
     </p>
-    <%= code_for('patterns_and_splats', 'contents.join("")') %>
+    <%= codeFor('patterns_and_splats', 'contents.join("")') %>
+    <p>
+      Expansion can be used to retrieve elements from the end of an array without having to assign the rest of its values. It works in function parameter lists as well.
+    </p>
+    <%= codeFor('expansion', '"first + " " + last"') %>
+    <p>
+      Destructuring assignment is also useful when combined with class constructors
+      to assign properties to your instance from an options object passed to the constructor.
+    </p>
+    <%= codeFor('constructor_destructuring', 'tim.age') %>
 
     <p>
-      <span id="fat_arrow" class="bookmark"></span>
+      <span id="fat-arrow" class="bookmark"></span>
       <b class="header">Function binding</b>
       In JavaScript, the <tt>this</tt> keyword is dynamically scoped to mean the
       object that the current function is attached to. If you pass a function as
@@ -787,7 +808,7 @@ Expressions
       to use with <tt>bind</tt>. Functions created with the fat arrow are able to access
       properties of the <tt>this</tt> where they're defined.
     </p>
-    <%= code_for('fat_arrow') %>
+    <%= codeFor('fat_arrow') %>
     <p>
       If we had used <tt>-&gt;</tt> in the callback above, <tt>@customer</tt> would
       have referred to the undefined "customer" property of the DOM element,
@@ -806,7 +827,7 @@ Expressions
       snippets of JavaScript within your CoffeeScript, you can
       use backticks to pass it straight through.
     </p>
-    <%= code_for('embedded', 'hi()') %>
+    <%= codeFor('embedded', 'hi()') %>
 
     <p>
       <span id="switch" class="bookmark"></span>
@@ -823,7 +844,12 @@ Expressions
       values for each <b>when</b> clause. If any of the values match, the clause
       runs.
     </p>
-    <%= code_for('switch') %>
+    <%= codeFor('switch') %>
+
+    <p>
+      Switch statements can also be used without a control expression, turning them in to a cleaner alternative to if/else chains.
+    </p>
+    <%= codeFor('switch_with_no_expression') %>
 
     <p>
       <span id="try" class="bookmark"></span>
@@ -831,7 +857,7 @@ Expressions
       Try/catch statements are just about the same as JavaScript (although
       they work as expressions).
     </p>
-    <%= code_for('try') %>
+    <%= codeFor('try') %>
 
     <p>
       <span id="comparisons" class="bookmark"></span>
@@ -841,7 +867,7 @@ Expressions
       from Python &mdash; making it easy to test if a value falls within a
       certain range.
     </p>
-    <%= code_for('comparisons', 'healthy') %>
+    <%= codeFor('comparisons', 'healthy') %>
 
     <p>
       <span id="strings" class="bookmark"></span>
@@ -850,18 +876,18 @@ Expressions
       strings allow for interpolated values, using <tt>#{ ... }</tt>,
       and single-quoted strings are literal.
     </p>
-    <%= code_for('interpolation', 'sentence') %>
+    <%= codeFor('interpolation', 'sentence') %>
     <p>
-      Multiline strings are allowed in CoffeeScript.
+      Multiline strings are allowed in CoffeeScript. Lines are joined by a single space unless they end with a backslash. Indentation is ignored.
     </p>
-    <%= code_for('strings', 'mobyDick') %>
+    <%= codeFor('strings', 'mobyDick') %>
     <p>
       Block strings can be used to hold formatted or indentation-sensitive text
       (or, if you just don't feel like escaping quotes and apostrophes). The
       indentation level that begins the block is maintained throughout, so
       you can keep it all aligned with the body of your code.
     </p>
-    <%= code_for('heredocs', 'html') %>
+    <%= codeFor('heredocs', 'html') %>
     <p>
       Double-quoted block strings, like other double-quoted strings, allow interpolation.
     </p>
@@ -871,18 +897,18 @@ Expressions
       the top of a file. Block comments, which mirror the syntax for block strings,
       are preserved in the generated code.
     </p>
-    <%= code_for('block_comment') %>
+    <%= codeFor('block_comment') %>
 
     <p>
       <span id="regexes" class="bookmark"></span>
       <b class="header">Block Regular Expressions</b>
       Similar to block strings and comments, CoffeeScript supports block regexes &mdash;
       extended regular expressions that ignore internal whitespace and can contain
-      comments and interpolation. Modeled after Perl's <tt>/x</tt> modifier, CoffeeSctipt's
+      comments and interpolation. Modeled after Perl's <tt>/x</tt> modifier, CoffeeScript's
       block regexes are delimited by <tt>///</tt> and go a long way towards making complex
       regular expressions readable. To quote from the CoffeeScript source:
     </p>
-    <%= code_for('heregexes') %>
+    <%= codeFor('heregexes') %>
 
 
     <h2>
@@ -908,7 +934,7 @@ Expressions
       be made available in the <tt>options</tt> object. Here's a task that uses
       the Node.js API to rebuild CoffeeScript's parser:
     </p>
-    <%= code_for('cake_tasks') %>
+    <%= codeFor('cake_tasks') %>
     <p>
       If you need to invoke one task before another &mdash; for example, running
       <tt>build</tt> before <tt>test</tt>, you can use the <tt>invoke</tt> function:
@@ -917,6 +943,26 @@ Expressions
       <a href="documentation/docs/cake.html">don't expect any fanciness built-in</a>.
       If you need dependencies, or async callbacks, it's best to put them in your
       code itself &mdash; not the cake task.
+    </p>
+
+    <h2>
+      <span id="source-maps" class="bookmark"></span>
+      Source Maps
+    </h2>
+
+    <p>
+      CoffeeScript 1.6.1 and above include support for generating source maps,
+      a way to tell your JavaScript engine what part of your CoffeeScript
+      program matches up with the code being evaluated. Browsers that support it
+      can automatically use source maps to show your original source code
+      in the debugger. To generate source maps alongside your JavaScript files,
+      pass the <tt>--map</tt> or <tt>-m</tt> flag to the compiler.
+    </p>
+
+    <p>
+      For a full introduction to source maps, how they work, and how to hook
+      them up in your browser, read the
+      <a href="http://www.html5rocks.com/en/tutorials/developertools/sourcemaps/">HTML5 Tutorial</a>.
     </p>
 
     <h2>
@@ -969,7 +1015,7 @@ Expressions
         is a reimagination of the excellent book
         <a href="http://eloquentjavascript.net/">Eloquent JavaScript</a>, as if
         it had been written in CoffeeScript instead. Covers language features
-        as well a the functional and object oriented programming styles. By
+        as well as the functional and object oriented programming styles. By
         <a href="https://github.com/autotelicum">E. Hoigaard</a>.
       </li>
       <li>
@@ -979,12 +1025,39 @@ Expressions
         a fast-paced multiplayer word game, writing both the client-side and Node.js
         portions in CoffeeScript.
       </li>
+      <li>
+        <a href="http://www.packtpub.com/coffeescript-programming-with-jquery-rails-nodejs/book">CoffeeScript Programming with jQuery, Rails, and Node.js</a>
+        is a new book by Michael Erasmus that covers CoffeeScript with an eye
+        towards real-world usage both in the browser (jQuery) and on the server
+        size (Rails, Node).
+      </li>
+      <li>
+        <a href="http://ristrettolo.gy">CoffeeScript Ristretto</a>
+        is a deep dive into CoffeeScript's semantics from simple functions up through
+        closures, higher-order functions, objects, classes, combinators, and decorators.
+        By <a href="http://braythwayt.com/">Reg Braithwaite</a>.
+      </li>
+      <li>
+        <a href="https://efendibooks.com/minibooks/testing-with-coffeescript">Testing with CoffeeScript</a>
+        is a succinct and freely downloadable guide to building testable
+        applications with CoffeeScript and Jasmine.
+      </li>
+      <li>
+        <a href="http://www.packtpub.com/coffeescript-application-development/book">CoffeeScript Application Development</a>
+        is a new book from Packt Publishing that introduces CoffeeScript while
+        walking through the process of building a demonstration web application.
+      </li>
+      <li>
+        <a href="http://www.manning.com/lee/">CoffeeScript in Action</a>
+        is a new book from Manning Publications that covers CoffeeScript syntax, composition techniques
+        and application development.
+      </li>
     </ul>
-    
+
     <h2>
       Screencasts
     </h2>
-    
+
     <ul>
       <li>
         <a href="http://coffeescript.codeschool.com">A Sip of CoffeeScript</a> is a <a href="http://www.codeschool.com">Code School Course</a>
@@ -1007,9 +1080,9 @@ Expressions
     <h2>
       Examples
     </h2>
-    
+
     <p>
-      The <a href="https://github.com/languages/coffeescript">best list of 
+      The <a href="https://github.com/languages/coffeescript">best list of
       open-source CoffeeScript examples</a> can be found on GitHub. But just
       to throw out few more:
     </p>
@@ -1022,11 +1095,6 @@ Expressions
       <li>
         <b>sstephenson</b>'s <a href="http://pow.cx/">Pow</a>,
         a zero-configuration Rack server, with comprehensive annotated source.
-      </li>
-      <li>
-        <b>frank06</b>'s <a href="http://riakjs.org/">riak-js</a>, a Node.js client for
-        <a href="http://www.basho.com/Riak.html">Riak</a>, with support for HTTP
-        and Protocol Buffers.
       </li>
       <li>
         <b>technoweenie</b>'s <a href="https://github.com/technoweenie/coffee-resque">Coffee-Resque</a>,
@@ -1090,6 +1158,13 @@ Expressions
         Perhaps your CoffeeScript-related question has been asked before. Check the FAQ first.
       </li>
       <li>
+        <a href="http://js2coffee.org">JS2Coffee</a><br />
+        Is a very well done reverse JavaScript-to-CoffeeScript compiler. It's
+        not going to be perfect (infer what your JavaScript classes are, when
+        you need bound functions, and so on...) &mdash; but it's a great starting
+        point for converting simple scripts.
+      </li>
+      <li>
         <a href="https://github.com/jashkenas/coffee-script/downloads">High-Rez Logo</a><br />
         The CoffeeScript logo is available in Illustrator, EPS and PSD formats, for use
         in presentations.
@@ -1115,7 +1190,163 @@ Expressions
       <span id="changelog" class="bookmark"></span>
       Change Log
     </h2>
-    
+
+    <p>
+      <b class="header" style="margin-top: 20px;">
+        <a href="https://github.com/jashkenas/coffee-script/compare/1.6.3...1.7.0">1.7.0</a>
+        <span class="timestamp"> &ndash; <small>January 28, 2014</small></span>
+      </b>
+      <ul>
+        <li>
+          When requiring CoffeeScript files in Node you must now explicitly register the compiler. This can be done with <tt>require 'coffee-script/register'</tt> or <tt>CoffeeScript.register()</tt>. Also for configuration such as Mocha's, use <b>coffee-script/register</b>.
+        </li>
+        <li>
+          Improved error messages, source maps and stack traces. Source maps now use the updated <tt>//#</tt> syntax.
+        </li>
+        <li>
+          Leading <tt>.</tt> now closes all open calls, allowing for simpler chaining syntax.
+        </li>
+      </ul>
+      <%= codeFor('chaining') %>
+      <ul>
+        <li>
+          Added <tt>**</tt>, <tt>//</tt> and <tt>%%</tt> operators and <tt>...</tt> expansion in parameter lists and destructuring expressions.
+        </li>
+        <li>
+          Multiline strings are now joined by a single space and ignore all indentation. A backslash at the end of a line can denote the amount of whitespace between lines, in both strings and heredocs. Backslashes correctly escape whitespace in block regexes.
+        </li>
+        <li>
+          Closing brackets can now be indented and therefore no longer cause unexpected error.
+        </li>
+        <li>
+          Several breaking compilation fixes. Non-callable literals (strings, numbers etc.) don't compile in a call now and multiple postfix conditionals compile properly. Postfix conditionals and loops always bind object literals. Conditional assignment compiles properly in subexpressions. <tt>super</tt> is disallowed outside of methods and works correctly inside <tt>for</tt> loops. 
+        </li>
+        <li>
+          Formatting of compiled block comments has been improved.
+        </li>
+        <li>
+          No more <tt>-p</tt> folders on Windows.
+        </li>
+        <li>
+          The <tt>options</tt> object passed to CoffeeScript is no longer mutated.
+        </li>
+      </ul>
+    </p>
+    <p>
+      <b class="header" style="margin-top: 20px;">
+        <a href="https://github.com/jashkenas/coffee-script/compare/1.6.2...1.6.3">1.6.3</a>
+        <span class="timestamp"> &ndash; <small>June 2, 2013</small></span>
+      </b>
+      <ul>
+        <li>
+          The CoffeeScript REPL now remembers your history between sessions.
+          Just like a proper REPL should.
+        </li>
+        <li>
+          You can now use <tt>require</tt> in Node to load <tt>.coffee.md</tt>
+          Literate CoffeeScript files. In the browser,
+          <tt>text/literate-coffeescript</tt> script tags.
+        </li>
+        <li>
+          The old <tt>coffee --lint</tt> command has been removed. It was useful
+          while originally working on the compiler, but has been surpassed by
+          JSHint. You may now use <tt>-l</tt> to pass literate files in over
+          <b>stdio</b>.
+        </li>
+        <li>
+          Bugfixes for Windows path separators, <tt>catch</tt> without naming
+          the error, and executable-class-bodies-with-
+          prototypal-property-attachment.
+        </li>
+      </ul>
+    </p>
+
+    <p>
+      <b class="header" style="margin-top: 20px;">
+        <a href="https://github.com/jashkenas/coffee-script/compare/1.6.1...1.6.2">1.6.2</a>
+        <span class="timestamp"> &ndash; <small>March 18, 2013</small></span>
+      </b>
+      <ul>
+        <li>
+          Source maps have been used to provide automatic line-mapping when
+          running CoffeeScript directly via the <tt>coffee</tt> command, and
+          for automatic line-mapping when running CoffeeScript directly in the
+          browser. Also, to provide better error messages for semantic errors
+          thrown by the compiler &mdash;
+          <a href="http://cl.ly/NdOA">with colors, even</a>.
+        </li>
+        <li>
+          Improved support for mixed literate/vanilla-style CoffeeScript projects,
+          and generating source maps for both at the same time.
+        </li>
+        <li>
+          Fixes for <b>1.6.x</b> regressions with overriding inherited bound
+          functions, and for Windows file path management.
+        </li>
+        <li>
+          The <tt>coffee</tt> command can now correctly <tt>fork()</tt>
+          both <tt>.coffee</tt> and <tt>.js</tt> files. (Requires Node.js 0.9+)
+        </li>
+      </ul>
+    </p>
+
+    <p>
+      <b class="header" style="margin-top: 20px;">
+        <a href="https://github.com/jashkenas/coffee-script/compare/1.5.0...1.6.1">1.6.1</a>
+        <span class="timestamp"> &ndash; <small>March 5, 2013</small></span>
+      </b>
+      <ul>
+        <li>
+          First release of <a href="#source-maps">source maps</a>. Pass the
+          <tt>--map</tt> flag to the compiler, and off you go. Direct all your
+          thanks over to <a href="http://github.com/jwalton">Jason Walton</a>.
+        </li>
+        <li>
+          Fixed a 1.5.0 regression with multiple implicit calls against an
+          indented implicit object. Combinations of implicit function calls
+          and implicit objects should generally be parsed better now &mdash;
+          but it still isn't good <i>style</i> to nest them too heavily.
+        </li>
+        <li>
+          <tt>.coffee.md</tt> is now also supported as a Literate CoffeeScript
+          file extension, for existing tooling.
+          <tt>.litcoffee</tt> remains the canonical one.
+        </li>
+        <li>
+          Several minor fixes surrounding member properties, bound methods and
+          <tt>super</tt> in class declarations.
+        </li>
+      </ul>
+    </p>
+
+    <p>
+      <b class="header" style="margin-top: 20px;">
+        <a href="https://github.com/jashkenas/coffee-script/compare/1.4.0...1.5.0">1.5.0</a>
+        <span class="timestamp"> &ndash; <small>Feb 25, 2013</small></span>
+      </b>
+      <ul>
+        <li>
+          First release of <a href="#literate">Literate CoffeeScript</a>.
+        </li>
+        <li>
+          The CoffeeScript REPL is now based on the Node.js REPL, and should work
+          better and more familiarly.
+        </li>
+        <li>
+          Returning explicit values from constructors is now forbidden. If you want
+          to return an arbitrary value, use a function, not a constructor.
+        </li>
+        <li>
+          You can now loop over an array backwards, without having to manually
+          deal with the indexes: <tt>for item in list by -1</tt>
+        </li>
+        <li>
+          Source locations are now preserved in the CoffeeScript AST, although
+          source maps are not yet being emitted.
+        </li>
+      </ul>
+    </p>
+
     <p>
       <b class="header" style="margin-top: 20px;">
         <a href="https://github.com/jashkenas/coffee-script/compare/1.3.3...1.4.0">1.4.0</a>
@@ -1123,7 +1354,7 @@ Expressions
       </b>
       <ul>
         <li>
-          The CoffeeScript compiler now strips Microsoft's UTF-8 BOM if it 
+          The CoffeeScript compiler now strips Microsoft's UTF-8 BOM if it
           exists, allowing you to compile BOM-borked source files.
         </li>
         <li>
@@ -1131,12 +1362,12 @@ Expressions
           and moving from <tt>path.exists</tt> to <tt>fs.exists</tt>.
         </li>
         <li>
-          Small tweaks to splat compilation, backticks, slicing, and the 
+          Small tweaks to splat compilation, backticks, slicing, and the
           error for duplicate keys in object literals.
         </li>
       </ul>
     </p>
-    
+
     <p>
       <b class="header" style="margin-top: 20px;">
         <a href="https://github.com/jashkenas/coffee-script/compare/1.3.1...1.3.3">1.3.3</a>
@@ -1146,7 +1377,7 @@ Expressions
         <li>
           Due to the new semantics of JavaScript's strict mode, CoffeeScript no
           longer guarantees that constructor functions have names in all runtimes.
-          See <a href="https://github.com/jashkenas/coffee-script/issues/2052">#2052</a> 
+          See <a href="https://github.com/jashkenas/coffee-script/issues/2052">#2052</a>
           for discussion.
         </li>
         <li>
@@ -1165,7 +1396,7 @@ Expressions
         </li>
       </ul>
     </p>
-    
+
     <p>
       <b class="header" style="margin-top: 20px;">
         <a href="https://github.com/jashkenas/coffee-script/compare/1.2.0...1.3.1">1.3.1</a>
@@ -1173,26 +1404,26 @@ Expressions
       </b>
       <ul>
         <li>
-          CoffeeScript now enforces all of JavaScript's <b>Strict Mode</b> early syntax 
-          errors at compile time. This includes old-style octal literals, 
-          duplicate property names in object literals, duplicate parameters in 
+          CoffeeScript now enforces all of JavaScript's <b>Strict Mode</b> early syntax
+          errors at compile time. This includes old-style octal literals,
+          duplicate property names in object literals, duplicate parameters in
           a function definition, deleting naked variables, setting the value of
           <tt>eval</tt> or <tt>arguments</tt>, and more.
-          See a full discussion at 
+          See a full discussion at
           <a href="https://github.com/jashkenas/coffee-script/issues/1547">#1547</a>.
         </li>
         <li>
           The REPL now has a handy new multi-line mode for entering large
           blocks of code. It's useful when copy-and-pasting examples into the
-          REPL. Enter multi-line mode with <tt>Ctrl-V</tt>. You may also now 
+          REPL. Enter multi-line mode with <tt>Ctrl-V</tt>. You may also now
           pipe input directly into the REPL.
         </li>
         <li>
-          CoffeeScript now prints a <tt>Generated by CoffeeScript VERSION</tt> 
+          CoffeeScript now prints a <tt>Generated by CoffeeScript VERSION</tt>
           header at the top of each compiled file.
         </li>
         <li>
-          Conditional assignment of previously undefined variables 
+          Conditional assignment of previously undefined variables
           <tt>a or= b</tt> is now considered a syntax error.
         </li>
         <li>
@@ -1204,18 +1435,18 @@ Expressions
           between them.
         </li>
         <li>
-          Both endpoints of a slice are now allowed to be omitted for consistency, 
+          Both endpoints of a slice are now allowed to be omitted for consistency,
           effectively creating a shallow copy of the list.
         </li>
         <li>
-          Additional tweaks and improvments to <tt>coffee --watch</tt> under 
-          Node's "new" file watching API. Watch will now beep by default 
+          Additional tweaks and improvments to <tt>coffee --watch</tt> under
+          Node's "new" file watching API. Watch will now beep by default
           if you introduce a syntax error into a watched script. We also now
           ignore hidden directories by default when watching recursively.
         </li>
       </ul>
     </p>
-    
+
     <p>
       <b class="header" style="margin-top: 20px;">
         <a href="https://github.com/jashkenas/coffee-script/compare/1.1.3...1.2.0">1.2.0</a>
@@ -1242,7 +1473,7 @@ Expressions
         </li>
       </ul>
     </p>
-    
+
     <p>
       <b class="header" style="margin-top: 20px;">
         <a href="https://github.com/jashkenas/coffee-script/compare/1.1.2...1.1.3">1.1.3</a>
@@ -1254,7 +1485,7 @@ Expressions
           out and keep it readable, as you can see in the examples on this page.
         </li>
         <li>
-          You can now call <tt>super</tt> in class level methods in class bodies, 
+          You can now call <tt>super</tt> in class level methods in class bodies,
           and bound class methods now preserve their correct context.
         </li>
         <li>
@@ -1263,7 +1494,7 @@ Expressions
           also supports binary numbers: <tt>0b10 is 2</tt>.
         </li>
         <li>
-          The CoffeeScript module has been nested under a subdirectory to make 
+          The CoffeeScript module has been nested under a subdirectory to make
           it easier to <tt>require</tt> individual components separately, without
           having to use <b>npm</b>. For example, after adding the CoffeeScript
           folder to your path: <tt>require('coffee-script/lexer')</tt>
@@ -1273,11 +1504,11 @@ Expressions
           it to get a shareable permalink for your example script.
         </li>
         <li>
-          The <tt>coffee --watch</tt> feature now only works on Node.js 0.6.0 
+          The <tt>coffee --watch</tt> feature now only works on Node.js 0.6.0
           and higher, but now also works properly on Windows.
         </li>
         <li>
-          Lots of small bug fixes from 
+          Lots of small bug fixes from
           <b><a href="https://github.com/michaelficarra">@michaelficarra</a></b>,
           <b><a href="https://github.com/geraldalewis">@geraldalewis</a></b>,
           <b><a href="https://github.com/satyr">@satyr</a></b>, and
@@ -1806,8 +2037,10 @@ Expressions
         else
           $(el).text window.compiledJS
         $('#error').hide()
-      catch error
-        $('#error').text(error.message).show()
+      catch {location, message}
+        if location?
+          message = "Error on line #{location.first_line + 1}: #{message}"
+        $('#error').text(message).show()
 
       # Update permalink
       $('#repl_permalink').attr 'href', "##{sourceFragment}#{encodeURIComponent source}"

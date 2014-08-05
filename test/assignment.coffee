@@ -81,6 +81,9 @@ test "compound assignment should be careful about caching variables", ->
   eq 5, base.five
   eq 5, count
 
+  eq 5, base().five ?= 6
+  eq 6, count
+
 test "compound assignment with implicit objects", ->
   obj = undefined
   obj ?=
@@ -265,6 +268,22 @@ test "#2055: destructuring assignment with `new`", ->
   {length} = new Array
   eq 0, length
 
+test "#156: destructuring with expansion", ->
+  array = [1..5]
+  [first, ..., last] = array
+  eq 1, first
+  eq 5, last
+  [..., lastButOne, last] = array
+  eq 4, lastButOne
+  eq 5, last
+  [first, second, ..., last] = array
+  eq 2, second
+  [..., last] = 'strings as well -> x'
+  eq 'x', last
+  throws (-> CoffeeScript.compile "[1, ..., 3]"),        null, "prohibit expansion outside of assignment"
+  throws (-> CoffeeScript.compile "[..., a, b...] = c"), null, "prohibit expansion and a splat"
+  throws (-> CoffeeScript.compile "[...] = c"),          null, "prohibit lone expansion"
+
 
 # Existential Assignment
 
@@ -293,10 +312,10 @@ test "#1627: prohibit conditional assignment of undefined variables", ->
   doesNotThrow (-> CoffeeScript.compile "x = null; do -> x ?= 10"),  "allow (x = null; do -> x ?= 10)"
   doesNotThrow (-> CoffeeScript.compile "x = null; do -> x ||= 10"), "allow (x = null; do -> x ||= 10)"
   doesNotThrow (-> CoffeeScript.compile "x = null; do -> x or= 10"), "allow (x = null; do -> x or= 10)"
-  
+
   throws (-> CoffeeScript.compile "-> -> -> x ?= 10"), null, "prohibit (-> -> -> x ?= 10)"
   doesNotThrow (-> CoffeeScript.compile "x = null; -> -> -> x ?= 10"), "allow (x = null; -> -> -> x ?= 10)"
-  
+
 test "more existential assignment", ->
   global.temp ?= 0
   eq global.temp, 0
@@ -311,7 +330,7 @@ test "#1348, #1216: existential assignment compilation", ->
   eq nonce, b
   #the first ?= compiles into a statement; the second ?= compiles to a ternary expression
   eq a ?= b ?= 1, nonce
-  
+
   if a then a ?= 2 else a = 3
   eq a, nonce
 
@@ -365,3 +384,24 @@ test '#2213: invocations within destructured parameters', ->
   throws -> CoffeeScript.compile '({a()})->'
   throws -> CoffeeScript.compile '({a:b()})->'
   throws -> CoffeeScript.compile '({a:b.c()})->'
+
+test '#2532: compound assignment with terminator', ->
+  doesNotThrow -> CoffeeScript.compile """
+  a = "hello"
+  a +=
+  "
+  world
+  !
+  "
+  """
+
+test "#2613: parens on LHS of destructuring", ->
+  a = {}
+  [(a).b] = [1, 2, 3]
+  eq a.b, 1
+
+test "#2181: conditional assignment as a subexpression", ->
+  a = false
+  false && a or= true
+  eq false, a
+  eq false, not a or= true
