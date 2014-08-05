@@ -401,7 +401,7 @@ forkNode = ->
   nodeArgs = opts.nodejs.split /\s+/
   args     = process.argv[1..]
   args.splice args.indexOf('--nodejs'), 2
-  p = spawn process.execPath, nodeArgs.concat(args),
+  p = spawn process.execPath, ['--harmony'].concat(nodeArgs, args),
     cwd:        process.cwd()
     env:        process.env
     customFds:  [0, 1, 2]
